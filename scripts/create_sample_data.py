@@ -3,6 +3,7 @@
 
 import os
 import sys
+import requests
 from dotenv import load_dotenv
 
 # Add the src directory to the Python path
@@ -16,42 +17,48 @@ def create_sample_data():
     # Load environment variables
     load_dotenv()
     
-    articles = [
-        {
-            "title": "Introduction to Machine Learning",
-            "content": "Machine learning is a subset of artificial intelligence that provides systems the ability to automatically learn and improve from experience without being explicitly programmed. It focuses on the development of computer programs that can access data and use it to learn for themselves.",
-            "author": "Dr. Jane Smith",
-            "category": "AI"
-        },
-        {
-            "title": "Deep Learning Fundamentals",
-            "content": "Deep learning is part of a broader family of machine learning methods based on artificial neural networks with representation learning. Learning can be supervised, semi-supervised or unsupervised. Deep learning architectures such as deep neural networks, deep belief networks, and recurrent neural networks have been applied to fields including computer vision, speech recognition, and natural language processing.",
-            "author": "Prof. Alan Turing",
-            "category": "AI"
-        },
-        {
-            "title": "Natural Language Processing Trends",
-            "content": "Natural language processing (NLP) is a subfield of linguistics, computer science, and artificial intelligence concerned with the interactions between computers and human language. Recent advances in transformer models like BERT and GPT have revolutionized the field, enabling state-of-the-art performance on various NLP tasks.",
-            "author": "Dr. Emily Chen",
-            "category": "NLP"
-        },
-        {
-            "title": "Computer Vision Applications",
-            "content": "Computer vision is an interdisciplinary field that deals with how computers can gain high-level understanding from digital images or videos. From the perspective of engineering, it seeks to understand and automate tasks that the human visual system can do. Applications include facial recognition, object detection, and autonomous vehicles.",
-            "author": "Dr. Michael Rodriguez",
-            "category": "Computer Vision"
-        }
-    ]
-    
+    # Fetch articles from API endpoint
+    api_url = os.getenv("ARTICLE_API_URL", "http://localhost:8000/api/articles")
+    try:
+        response = requests.get(api_url,verify=False)
+        response.raise_for_status()
+        res = response.json()
+        articles = res.get("data", [])
+
+    except Exception as e:
+        print(f"Failed to fetch articles from API: {e}")
+        return
+
     # Convert to LangChain documents
     documents = []
     for article in articles:
+        # meta_datas is a list, get first if exists
+        meta = article.get("meta_datas", [{}])[0]
+        categories = article.get("categories", [])
+        tags = article.get("tags", [])
+        images = article.get("images", [])
+        videos = article.get("videos", [])
+
         doc = Document(
-            page_content=article["content"],
+            page_content=article.get("description", ""),
             metadata={
-                "title": article["title"],
-                "author": article["author"],
-                "category": article["category"]
+                "id": article.get("id"),
+                "title": article.get("title", ""),
+                "author_name": meta.get("author_name", ""),
+                "author_organization_name": meta.get("author_organization_name", ""),
+                "author_department": meta.get("author_department", ""),
+                "categories": ", ".join([cat.get("name", "") for cat in categories]),
+                "tags": ", ".join([tag.get("name", "") for tag in tags]),
+                "image_url": images[0]["publish_url"] if images else "",
+                "video_url": videos[0]["url"] if videos else "",
+                "public_status": article.get("public_status", ""),
+                "status": article.get("status", ""),
+                "priority": article.get("priority", ""),
+                "view_count": article.get("view_count", 0),
+                "likes_count": article.get("likes_count", 0),
+                "comments_count": article.get("comments_count", 0),
+                "created_at": article.get("created_at", ""),
+                "updated_at": article.get("updated_at", "")
             }
         )
         documents.append(doc)
