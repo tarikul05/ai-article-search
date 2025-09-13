@@ -1,0 +1,18 @@
+[project]
+name = "tqm-ai-search"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "chromadb>=0.4.0",
+    "openai>=1.0.0",
+    "langchain>=0.1.0",
+    "langchain-openai>=0.0.1",
+    "python-dotenv>=1.0.0",
+    "pymysql>=1.1.0",
+    "sqlalchemy>=2.0.0",
+    "numpy>=1.24.0",
+    "tqdm>=4.66.0",  # For progress bars
+    "rich>=13.0.0",  # For pretty console output
+]
