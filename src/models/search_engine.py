@@ -192,8 +192,9 @@ class ArticleSearchEngine:
                 'id': article_id,
                 'title': metadata.get('title', 'Untitled'),
                 'content': document,
-                'author': metadata.get('author', 'Unknown'),
-                'category': metadata.get('category', 'General'),
+                'author_name': metadata.get('author_name', 'Unknown'),
+                'categories': metadata.get('categories', 'Unknown'),
+                'tags': metadata.get('tags', 'Unknown'),
                 'match_percentage': match_percentage,
                 'distance': distance
             })

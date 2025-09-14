@@ -8,7 +8,7 @@ import argparse
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress
+from rich.progress import Progress, BarColumn, TextColumn
 
 from src.utils.config import Config
 from src.models.search_engine import ArticleSearchEngine
@@ -87,14 +87,26 @@ def main():
                         with Progress() as progress:
                             task = progress.add_task("[cyan]Searching...", total=1)
                             results = search_engine.search_articles(query, top_k=args.top)
-                            progress.update(task, completed=1)
+                            progress.update(task, completed=1)  
                         
                         if results:
                             console.print(Panel.fit(f"Found {len(results)} results", style="green"))
                             for i, result in enumerate(results, 1):
                                 console.print(f"\n[i]{i}. {result['title']}[/i]")
-                                console.print(f"   [dim]Author: {result['author']}[/dim]")
+                                console.print(f"   [dim]Author: {result['author_name']}[/dim]")
+                                # console.print(f"   [dim]Categories: {', '.join(result['categories'])}[/dim]")
+                                console.print(f"   [dim]Tags: {result['tags']}[/dim]")
                                 console.print(f"   [green]Match: {result['match_percentage']}%[/green]")
+                                # print Progress bar for match percentage
+                                with Progress(
+                                    TextColumn("[bold blue]{task.description}"),
+                                    BarColumn(bar_width=10),
+                                    TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                                    expand=False
+                                ) as progress_bar:
+                                    task = progress_bar.add_task("[cyan]   ", total=100)
+                                    progress_bar.update(task, completed=result['match_percentage'])
+
                                 console.print(f"   [yellow]Preview: {result['content'][:150]}...[/yellow]")
                         else:
                             console.print("[red]No results found[/red]")
