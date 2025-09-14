@@ -13,7 +13,7 @@ class Config:
     openai_embedding_model: str = "text-embedding-ada-002"
     
     # Chroma settings
-    chroma_persist_dir: str = "./chroma_data"
+    chroma_persist_dir: str = "./data"
     chroma_host: str = "localhost"
     chroma_port: int = 8000
     

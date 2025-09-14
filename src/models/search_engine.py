@@ -10,6 +10,8 @@ from langchain_openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 import numpy as np
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class Config:
@@ -64,7 +66,9 @@ class ArticleSearchEngine:
     def initialize_database(self, documents: Optional[List[Document]] = None):
         """Initialize the database with sample data or provided documents"""
         if documents is None:
-            documents = self._create_sample_documents()
+            documents = self._import_articles_via_api()
+            # if not documents:
+            #     documents = self._create_sample_documents()
         
         # Split documents into chunks
         text_splitter = RecursiveCharacterTextSplitter(
@@ -86,7 +90,57 @@ class ArticleSearchEngine:
         )
         
         return len(chunks)
-    
+
+    def _import_articles_via_api(self):
+        """Import articles from an API endpoint"""
+        import requests
+        api_url = os.getenv("ARTICLE_API_URL", "http://localhost:8000/api/articles")
+        print(f"Fetching articles from API: {api_url}")
+        
+        try:
+            response = requests.get(api_url, verify=False)
+            response.raise_for_status()
+            res = response.json()
+            articles = res.get("data", [])
+            print(f"Fetched {len(articles)} articles from API")
+        except Exception as e:
+            print(f"Failed to fetch articles from API: {e}")
+            return 0
+        
+        # Convert to LangChain documents
+        documents = []
+        for article in articles:
+            meta = article.get("meta_datas", [{}])[0]
+            categories = article.get("categories", [])
+            tags = article.get("tags", [])
+            images = article.get("images", [])
+            videos = article.get("videos", [])
+            
+            doc = Document(
+                page_content=article.get("description", ""),
+                metadata={
+                    "id": article.get("id"),
+                    "title": article.get("title", ""),
+                    "author_name": meta.get("author_name", ""),
+                    "author_organization_name": meta.get("author_organization_name", ""),
+                    "author_department": meta.get("author_department", ""),
+                    "categories": ", ".join([cat.get("name", "") for cat in categories]),
+                    "tags": ", ".join([tag.get("name", "") for tag in tags]),
+                    "image_url": images[0]["publish_url"] if images else "",
+                    "video_url": videos[0]["url"] if videos else "",
+                    "public_status": article.get("public_status", ""),
+                    "status": article.get("status", ""),
+                    "priority": article.get("priority", ""),
+                    "view_count": article.get("view_count", 0),
+                    "likes_count": article.get("likes_count", 0),
+                    "comments_count": article.get("comments_count", 0),
+                    "created_at": article.get("created_at", ""),
+                    "updated_at": article.get("updated_at", "")
+                }
+            )
+            documents.append(doc)
+        return documents
+
     def _create_sample_documents(self) -> List[Document]:
         """Create sample documents for testing"""
         return [
